@@ -22,12 +22,12 @@ export type BreathMachineState = {
 }
 
 export const INHALE_KEY = 'f'
-export const EXHALE_KEY = 'e'
+export const EXHALE_KEY = 'c'
 
 export function resolveBreathKey(key: string): BreathKey | null {
   const normalized = key.toLowerCase()
   if (normalized === INHALE_KEY || normalized === 'arrowdown') return 'inhale'
-  if (normalized === EXHALE_KEY || normalized === 'arrowup') return 'exhale'
+  if (normalized === EXHALE_KEY || normalized === 'arrowright') return 'exhale'
   return null
 }
 
@@ -121,12 +121,12 @@ export function handleExhaleDown(state: BreathMachineState, at: number): BreathM
       lastMissReason: null,
     }
   }
-  return miss(state, 'Press up only after an inhale', at)
+  return miss(state, 'Press right only after an inhale', at)
 }
 
 export function handleExhaleUp(state: BreathMachineState, at: number): BreathMachineState {
   if (state.phase !== 'exhaling' || state.holdStartedAt === null) {
-    return miss(state, 'Release up only while exhaling', at)
+    return miss(state, 'Release right only while exhaling', at)
   }
 
   return completeBreath(state, at - state.holdStartedAt, at)

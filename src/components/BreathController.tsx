@@ -2,14 +2,11 @@
 
 import { BreathKey } from '@/lib/breathMachine'
 
-function DpadArrow({ direction }: { direction: 'up' | 'down' }) {
+function DpadArrow({ direction }: { direction: 'down' | 'right' }) {
+  const rotation = direction === 'down' ? 'rotate(180deg)' : 'rotate(90deg)'
+
   return (
-    <svg
-      viewBox="0 0 12 12"
-      className="h-3 w-3"
-      style={direction === 'down' ? { transform: 'rotate(180deg)' } : undefined}
-      aria-hidden
-    >
+    <svg viewBox="0 0 12 12" className="h-3 w-3" style={{ transform: rotation }} aria-hidden>
       <path d="M6 2 L10 9 H2 Z" fill="currentColor" />
     </svg>
   )
@@ -24,7 +21,7 @@ function BreathKeyButton({
   onKeyUp,
 }: {
   breathKey: BreathKey
-  direction: 'up' | 'down'
+  direction: 'down' | 'right'
   held: boolean
   interactive: boolean
   onKeyDown: (key: BreathKey) => void
@@ -49,7 +46,7 @@ function BreathKeyButton({
         onKeyUp(breathKey)
       }}
       onPointerCancel={() => onKeyUp(breathKey)}
-      className={`flex h-10 w-16 touch-none items-center justify-center transition-colors ${
+      className={`flex h-10 w-10 touch-none items-center justify-center transition-colors ${
         held ? 'bg-accent/20 text-accent' : 'text-dim hover:text-foreground/60'
       } ${interactive ? 'cursor-pointer' : ''}`}
     >
@@ -58,6 +55,7 @@ function BreathKeyButton({
   )
 }
 
+/** Down + right — adjacent on the D-pad, minimal finger travel. */
 export default function BreathController({
   heldKeys,
   interactive,
@@ -72,10 +70,11 @@ export default function BreathController({
   const props = { interactive, onKeyDown, onKeyUp }
 
   return (
-    <div className="flex flex-col items-center border border-dim/40">
-      <BreathKeyButton breathKey="exhale" direction="up" held={heldKeys.has('exhale')} {...props} />
-      <div className="h-px w-full bg-dim/40" aria-hidden />
+    <div className="inline-grid grid-cols-2 grid-rows-2 border border-dim/40">
+      <div aria-hidden />
+      <BreathKeyButton breathKey="exhale" direction="right" held={heldKeys.has('exhale')} {...props} />
       <BreathKeyButton breathKey="inhale" direction="down" held={heldKeys.has('inhale')} {...props} />
+      <div aria-hidden />
     </div>
   )
 }

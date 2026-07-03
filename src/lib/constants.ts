@@ -18,7 +18,7 @@ export const PHASE_LABELS = {
   idle: 'down to start',
   'awaiting-inhale': 'down',
   inhaling: 'in',
-  'awaiting-exhale': 'up',
+  'awaiting-exhale': 'right',
   exhaling: 'out',
 } as const
 
