@@ -23,8 +23,8 @@ export const PHASE_LABELS = {
 } as const
 
 export const KEY_COLORS = {
-  inhale: 'bg-sky-500',
-  exhale: 'bg-emerald-500',
+  inhale: 'bg-accent/60',
+  exhale: 'bg-accent/40',
 } as const
 
 export const STORAGE_BEST_STREAK = 'breathing-best-streak'

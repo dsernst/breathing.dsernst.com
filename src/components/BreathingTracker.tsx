@@ -242,7 +242,7 @@ export default function BreathingTracker() {
       </div>
 
       {state.lastMissReason && (
-        <p className="fixed bottom-24 max-w-xs px-6 text-center text-xs text-rose-500/70">
+        <p className="fixed bottom-24 max-w-xs px-6 text-center text-xs text-dim">
           miss
         </p>
       )}
