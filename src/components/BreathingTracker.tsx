@@ -27,7 +27,7 @@ import {
   resetSession,
   resolveBreathKey,
 } from '@/lib/breathMachine'
-import { KEY_COLORS, PAUSE_HINT_MS, PHASE_LABELS, STORAGE_BEST_STREAK } from '@/lib/constants'
+import { PAUSE_HINT_MS, PHASE_LABELS, STORAGE_BEST_STREAK } from '@/lib/constants'
 import {
   formatDuration,
   formatExportFilename,
@@ -41,22 +41,27 @@ function saveBestStreak(n: number) {
   writeLocalStorage(STORAGE_BEST_STREAK, String(n))
 }
 
-function phaseAccent(phase: BreathMachineState['phase']) {
-  if (phase === 'inhaling') return 'text-sky-400'
-  if (phase === 'exhaling') return 'text-emerald-400'
-  if (phase === 'idle') return 'text-zinc-500'
-  return 'text-lime-400'
-}
-
 function phaseActive(phase: BreathMachineState['phase']) {
   return phase === 'inhaling' || phase === 'exhaling'
+}
+
+function statusLine(
+  state: BreathMachineState,
+  listening: boolean,
+  sessionDuration: number,
+  paused: boolean,
+) {
+  const parts: string[] = [PHASE_LABELS[state.phase]]
+  if (!listening) parts.push('paused')
+  else if (paused) parts.push('…')
+  if (state.sessionStartedAt !== null) parts.push(formatSessionTime(sessionDuration))
+  return parts.join(' · ')
 }
 
 export default function BreathingTracker() {
   const [state, setState] = useState<BreathMachineState>(() => createInitialState())
   const [heldKeys, setHeldKeys] = useState<Set<BreathKey>>(new Set())
   const [listening, setListening] = useState(true)
-  const [exportedCount, setExportedCount] = useState<number | null>(null)
   const stateRef = useRef(state)
   const pressRef = useRef<Partial<Record<BreathKey, number>>>({})
 
@@ -67,9 +72,11 @@ export default function BreathingTracker() {
   const holdDuration = useHoldDuration(state.holdStartedAt)
   const sessionDuration = useSessionDuration(state.sessionStartedAt)
   const awaitingGap = state.phase === 'awaiting-inhale' || state.phase === 'awaiting-exhale'
-  const { paused, bumpActivity: bumpPause } = usePauseHint(awaitingGap && state.phase !== 'idle', PAUSE_HINT_MS)
+  const { paused, bumpActivity: bumpPause } = usePauseHint(awaitingGap, PAUSE_HINT_MS)
 
   useBreathSessionWakeLock(state.phase !== 'idle')
+
+  const live = state.phase !== 'idle' && listening
 
   useEffect(() => {
     stateRef.current = state
@@ -173,7 +180,6 @@ export default function BreathingTracker() {
     setState(next)
     pressRef.current = {}
     setHeldKeys(new Set())
-    setExportedCount(null)
   }
 
   const exportLog = () => {
@@ -193,152 +199,113 @@ export default function BreathingTracker() {
     a.download = formatExportFilename()
     a.click()
     URL.revokeObjectURL(url)
-    setExportedCount(state.breaths.length)
+  }
+
+  if (needsAudioGate) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-6">
+        <button
+          type="button"
+          onClick={enableAudio}
+          className="cursor-pointer text-sm tracking-wide text-dim transition hover:text-foreground"
+        >
+          tap for audio
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-50">Breathing</h1>
-        <p className="text-zinc-400">Track inhale and exhale holds — build an unbroken streak</p>
-      </header>
+    <div className="relative flex min-h-dvh flex-col items-center justify-center select-none">
+      <p
+        className={`fixed top-10 text-[0.65rem] uppercase tracking-[0.25em] transition-colors ${
+          live ? 'text-accent' : 'text-dim'
+        }`}
+      >
+        {statusLine(state, listening, sessionDuration, paused)}
+      </p>
 
-      <section className="flex flex-col items-center gap-6 overflow-visible rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
-        <div className="flex w-full items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <span
-              className={`h-2 w-2 rounded-full ${listening ? 'animate-pulse bg-lime-500' : 'bg-zinc-400'}`}
-            />
-            <span className="text-zinc-300">{listening ? 'Listening' : 'Paused'}</span>
+      <div className="flex flex-col items-center leading-none">
+        <span
+          className={`text-[clamp(4rem,18vw,9rem)] font-extralight tabular-nums tracking-tight transition-colors ${
+            state.streak > 0 ? 'text-accent' : 'text-foreground'
+          }`}
+        >
+          {state.streak}
+        </span>
+
+        {phaseActive(state.phase) && (
+          <span className="mt-3 font-extralight tabular-nums text-dim">
+            {formatHoldLive(holdDuration)}
+          </span>
+        )}
+      </div>
+
+      {state.lastMissReason && (
+        <p className="fixed bottom-24 max-w-xs px-6 text-center text-xs text-rose-500/70">
+          miss
+        </p>
+      )}
+
+      {state.bestStreak > 0 && (
+        <p className="fixed bottom-16 text-xs tabular-nums text-dim/80">
+          best {state.bestStreak}
+        </p>
+      )}
+
+      <details className="group fixed bottom-8 text-dim open:text-foreground/60">
+        <summary className="cursor-pointer list-none text-center text-sm tracking-widest marker:content-none [&::-webkit-details-marker]:hidden">
+          ···
+        </summary>
+        <div className="absolute bottom-full left-1/2 mb-4 flex w-72 -translate-x-1/2 flex-col gap-4 rounded border border-dim/30 bg-background px-4 py-4 text-xs">
+          <BreathController
+            heldKeys={heldKeys}
+            interactive={listening}
+            onKeyDown={handleKeyDown}
+            onKeyUp={handleKeyUp}
+          />
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <button
+              type="button"
+              onClick={() => setListening((v) => !v)}
+              className="cursor-pointer hover:text-foreground"
+            >
+              {listening ? 'pause' : 'resume'}
+            </button>
+            <button
+              type="button"
+              onClick={reset}
+              disabled={state.phase === 'idle'}
+              className="cursor-pointer hover:text-foreground disabled:opacity-30"
+            >
+              reset
+            </button>
+            {state.breaths.length > 0 && (
+              <button type="button" onClick={exportLog} className="cursor-pointer hover:text-foreground">
+                export ({state.breaths.length})
+              </button>
+            )}
           </div>
-          {state.sessionStartedAt !== null && (
-            <span className="font-mono text-zinc-500">{formatSessionTime(sessionDuration)}</span>
-          )}
-        </div>
 
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-xs font-medium uppercase tracking-[0.25em] text-zinc-500">Streak</p>
-          <p
-            className={`font-mono text-7xl font-extralight tabular-nums tracking-tight sm:text-8xl ${
-              state.streak > 0 ? 'text-lime-400' : 'text-zinc-300'
-            }`}
-          >
-            {state.streak}
-          </p>
-          <p className="text-sm text-zinc-500">
-            best <span className="font-mono text-zinc-400">{state.bestStreak}</span>
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center gap-1">
-          <p className={`text-sm font-medium uppercase tracking-widest ${phaseAccent(state.phase)}`}>
-            {PHASE_LABELS[state.phase]}
-          </p>
-          {phaseActive(state.phase) && (
-            <p className="font-mono text-2xl tabular-nums text-zinc-300">
-              {formatHoldLive(holdDuration)}
-            </p>
-          )}
-          {paused && (
-            <p className="text-xs text-zinc-500">Paused — take your time, streak still counts</p>
-          )}
-        </div>
-
-        {state.lastMissReason && (
-          <p className="rounded-lg border border-rose-900/60 bg-rose-950/40 px-4 py-2 text-center text-sm text-rose-200/90">
-            Miss — streak reset. {state.lastMissReason}
-          </p>
-        )}
-
-        {insecureContext && (
-          <p className="rounded-lg border border-amber-800/60 bg-amber-950/40 px-3 py-2 text-xs leading-relaxed text-amber-200/90">
-            Audio requires HTTPS. Use <code className="text-amber-100">npm run dev:https</code> for
-            phone testing.
-          </p>
-        )}
-
-        {needsAudioGate ? (
-          <button
-            type="button"
-            onClick={enableAudio}
-            className="cursor-pointer rounded-xl bg-lime-600 px-8 py-3 text-sm font-medium text-white transition"
-          >
-            Enable audio feedback
-          </button>
-        ) : (
-          <>
-            <BreathController
-              heldKeys={heldKeys}
-              interactive={listening}
-              onKeyDown={handleKeyDown}
-              onKeyUp={handleKeyUp}
-            />
-            <IdleWarningBeeps {...idleBeepsProps} />
-          </>
-        )}
-
-        <div className="flex flex-wrap justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setListening((v) => !v)}
-            className="cursor-pointer rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800"
-          >
-            {listening ? 'Pause' : 'Resume'}
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            disabled={state.phase === 'idle'}
-            className="cursor-pointer rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-default disabled:opacity-40"
-          >
-            Reset session
-          </button>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-            Breaths ({state.breaths.length})
-          </h2>
-          <button
-            type="button"
-            onClick={exportLog}
-            disabled={state.breaths.length === 0}
-            className="cursor-pointer rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-default disabled:opacity-40"
-          >
-            {exportedCount === state.breaths.length && state.breaths.length > 0
-              ? 'Exported.'
-              : 'Export'}
-          </button>
-        </div>
-
-        <div className="max-h-72 overflow-y-auto rounded-xl border border-zinc-800">
-          {state.breaths.length === 0 ? (
-            <p className="p-8 text-center text-sm text-zinc-400">
-              Complete an inhale → exhale cycle to start your streak.
-            </p>
-          ) : (
-            <ul className="divide-y divide-zinc-800">
-              {state.breaths.map((breath, i) => (
-                <li
-                  key={breath.id}
-                  className="flex items-center gap-4 px-4 py-2.5 font-mono text-sm"
-                >
-                  <span className="w-8 shrink-0 text-zinc-500">#{state.breaths.length - i}</span>
-                  <span className="w-24 shrink-0 text-zinc-400">
-                    {formatTimestamp(breath.completedAt)}
-                  </span>
-                  <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${KEY_COLORS.inhale}`} />
-                  <span className="text-zinc-300">{formatDuration(breath.inhaleMs)}</span>
-                  <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${KEY_COLORS.exhale}`} />
-                  <span className="text-zinc-300">{formatDuration(breath.exhaleMs)}</span>
+          {state.breaths.length > 0 && (
+            <ul className="max-h-32 space-y-1 overflow-y-auto tabular-nums text-dim">
+              {state.breaths.slice(0, 12).map((b, i) => (
+                <li key={b.id}>
+                  {state.breaths.length - i}. {formatDuration(b.inhaleMs)} /{' '}
+                  {formatDuration(b.exhaleMs)}
                 </li>
               ))}
             </ul>
           )}
+
+          {insecureContext && (
+            <p className="text-dim/80">Audio needs HTTPS — use npm run dev:https on phone.</p>
+          )}
+
+          <IdleWarningBeeps {...idleBeepsProps} />
         </div>
-      </section>
+      </details>
     </div>
   )
 }

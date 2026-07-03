@@ -15,11 +15,11 @@ export const CONTROLLER_IDLE_WARNINGS = [
 export const PAUSE_HINT_MS = 20_000
 
 export const PHASE_LABELS = {
-  idle: 'Press down to begin',
-  'awaiting-inhale': 'Press down — inhale',
-  inhaling: 'Inhale',
-  'awaiting-exhale': 'Press up — exhale',
-  exhaling: 'Exhale',
+  idle: 'down to start',
+  'awaiting-inhale': 'down',
+  inhaling: 'in',
+  'awaiting-exhale': 'up',
+  exhaling: 'out',
 } as const
 
 export const KEY_COLORS = {
