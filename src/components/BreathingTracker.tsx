@@ -117,8 +117,9 @@ export default function BreathingTracker() {
       const prev = stateRef.current
       const next = handleBreathKeyDown(prev, breathKey, Date.now())
       if (speechLabels) {
-        if (next.phase === 'inhaling' && prev.phase !== 'inhaling') speakBreathPhase('in')
-        if (next.phase === 'exhaling' && prev.phase !== 'exhaling') speakBreathPhase('out')
+        const breathPair = prev.streak + 1
+        if (next.phase === 'inhaling' && prev.phase !== 'inhaling') speakBreathPhase('in', breathPair)
+        if (next.phase === 'exhaling' && prev.phase !== 'exhaling') speakBreathPhase('out', breathPair)
       }
       pressRef.current[breathKey] = Date.now()
       setHeldKeys((held) => new Set(held).add(breathKey))
