@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
+import { startTransition, memo, useCallback, useEffect, useRef, useState } from 'react'
 import { BreathAudioSettings, useBreathAudioPrefs } from '@/components/BreathAudioSettings'
 import BreathController from '@/components/BreathController'
 import { IdleWarningBeeps, useIdleWarningBeeps } from '@/components/IdleWarningBeeps'
@@ -36,6 +36,27 @@ function formatBeat(beat: string) {
   if (beat === 'in' || beat === 'out') return beat.toUpperCase()
   return beat
 }
+
+const PhaseBeat = memo(function PhaseBeat({
+  phase,
+  beat,
+  holding,
+}: {
+  phase: string
+  beat: string
+  holding: boolean
+}) {
+  return (
+    <span
+      key={phase}
+      className={`breath-beat text-[clamp(4rem,20vw,10rem)] font-extralight uppercase tracking-[0.08em] transition-colors duration-500 ease-in-out ${
+        holding ? 'text-accent' : 'text-dim'
+      }`}
+    >
+      {formatBeat(beat)}
+    </span>
+  )
+})
 
 export default function BreathingTracker() {
   const [state, setState] = useState<BreathMachineState>(() => createInitialState())
@@ -221,13 +242,7 @@ export default function BreathingTracker() {
       </div>
 
       <div className="flex flex-col items-center leading-none">
-        <span
-          className={`text-[clamp(4rem,20vw,10rem)] font-extralight uppercase tracking-[0.08em] transition-colors duration-150 ${
-            holding ? 'text-accent' : 'text-dim'
-          }`}
-        >
-          {formatBeat(beat)}
-        </span>
+        <PhaseBeat phase={state.phase} beat={beat} holding={holding} />
 
         <span
           className={`mt-3 min-h-4 text-[0.65rem] uppercase tracking-[0.2em] text-dim/70 transition-opacity duration-150 ${

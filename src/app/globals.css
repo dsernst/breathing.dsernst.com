@@ -23,3 +23,13 @@ body {
   color: var(--foreground);
   font-family: var(--font-mono), ui-monospace, 'SF Mono', monospace;
 }
+
+@keyframes breath-beat-in {
+  from {
+    opacity: 0.06;
+  }
+}
+
+.breath-beat {
+  animation: breath-beat-in 900ms ease-out;
+}
