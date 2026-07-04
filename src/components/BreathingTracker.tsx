@@ -11,10 +11,7 @@ import {
   useSessionDuration,
 } from '@/hooks/useBreathSession'
 import { useTouchAudioGate } from '@/hooks/useTouchAudioGate'
-import {
-  playBreathCompleteBeep,
-  playMissBeep,
-} from '@/lib/beep'
+import { playBreathCompleteBeep, playMissBeep } from '@/lib/beep'
 import {
   BreathKey,
   BreathMachineState,
@@ -24,7 +21,12 @@ import {
   resetSession,
   resolveBreathKey,
 } from '@/lib/breathMachine'
-import { PAUSE_HINT_MS, PHASE_LABELS, STORAGE_BEST_STREAK } from '@/lib/constants'
+import {
+  PAUSE_HINT_MS,
+  PHASE_DISPLAY,
+  phaseIsHold,
+  STORAGE_BEST_STREAK,
+} from '@/lib/constants'
 import {
   formatDuration,
   formatExportFilename,
@@ -38,21 +40,9 @@ function saveBestStreak(n: number) {
   writeLocalStorage(STORAGE_BEST_STREAK, String(n))
 }
 
-function phaseActive(phase: BreathMachineState['phase']) {
-  return phase === 'inhaling' || phase === 'exhaling'
-}
-
-function statusLine(
-  state: BreathMachineState,
-  listening: boolean,
-  sessionDuration: number,
-  paused: boolean,
-) {
-  const parts: string[] = [PHASE_LABELS[state.phase]]
-  if (!listening) parts.push('paused')
-  else if (paused) parts.push('…')
-  if (state.sessionStartedAt !== null) parts.push(formatSessionTime(sessionDuration))
-  return parts.join(' · ')
+function formatBeat(beat: string) {
+  if (beat === 'in' || beat === 'out') return beat.toUpperCase()
+  return beat
 }
 
 export default function BreathingTracker() {
@@ -73,7 +63,8 @@ export default function BreathingTracker() {
 
   useBreathSessionWakeLock(state.phase !== 'idle')
 
-  const live = state.phase !== 'idle' && listening
+  const holding = phaseIsHold(state.phase)
+  const { beat, hint } = PHASE_DISPLAY[state.phase]
 
   useEffect(() => {
     stateRef.current = state
@@ -205,43 +196,52 @@ export default function BreathingTracker() {
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center select-none">
-      <p
-        className={`fixed top-10 text-[0.65rem] uppercase tracking-[0.25em] transition-colors ${
-          live ? 'text-accent' : 'text-dim'
-        }`}
-      >
-        {statusLine(state, listening, sessionDuration, paused)}
-      </p>
+      <div className="fixed inset-x-0 top-8 flex items-baseline justify-between px-8 text-xs tabular-nums tracking-wide text-dim">
+        <span>
+          {state.sessionStartedAt !== null ? formatSessionTime(sessionDuration) : ''}
+          {!listening && state.sessionStartedAt !== null && ' · paused'}
+          {listening && paused && ' · …'}
+        </span>
+        {state.phase !== 'idle' && (
+          <span>
+            {state.streak}
+            {state.bestStreak > 0 && (
+              <span className="text-dim/60"> · best {state.bestStreak}</span>
+            )}
+          </span>
+        )}
+      </div>
 
       <div className="flex flex-col items-center leading-none">
         <span
-          className={`text-[clamp(4rem,18vw,9rem)] font-extralight tabular-nums tracking-tight transition-colors ${
-            state.streak > 0 ? 'text-accent' : 'text-foreground'
+          className={`text-[clamp(4rem,20vw,10rem)] font-extralight uppercase tracking-[0.08em] transition-colors duration-150 ${
+            holding ? 'text-accent' : 'text-dim'
           }`}
         >
-          {state.streak}
+          {formatBeat(beat)}
         </span>
 
         <span
-          className={`mt-3 font-extralight tabular-nums text-dim transition-opacity ${
-            phaseActive(state.phase) ? 'opacity-100' : 'opacity-0'
+          className={`mt-4 min-h-[2rem] text-[clamp(1.5rem,6vw,3rem)] font-extralight tabular-nums transition-opacity duration-150 ${
+            holding ? 'text-foreground opacity-100' : 'opacity-0'
           }`}
-          aria-hidden={!phaseActive(state.phase)}
+          aria-hidden={!holding}
         >
           {formatHoldLive(holdDuration)}
+        </span>
+
+        <span
+          className={`mt-3 min-h-[1rem] text-[0.65rem] uppercase tracking-[0.2em] text-dim/70 transition-opacity duration-150 ${
+            hint ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-hidden={!hint}
+        >
+          {hint ?? '·'}
         </span>
       </div>
 
       {state.lastMissReason && (
-        <p className="fixed bottom-24 max-w-xs px-6 text-center text-xs text-dim">
-          miss
-        </p>
-      )}
-
-      {state.bestStreak > 0 && (
-        <p className="fixed bottom-16 text-xs tabular-nums text-dim/80">
-          best {state.bestStreak}
-        </p>
+        <p className="fixed bottom-20 text-xs uppercase tracking-[0.2em] text-dim">miss</p>
       )}
 
       <details className="group fixed bottom-8 text-dim open:text-foreground/60">
