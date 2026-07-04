@@ -38,4 +38,3 @@ export const KEY_COLORS = {
 } as const
 
 export const STORAGE_BEST_STREAK = 'breathing-best-streak'
-export const STORAGE_BREATHS = 'breathing-session-breaths'

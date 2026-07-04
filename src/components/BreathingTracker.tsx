@@ -27,13 +27,7 @@ import {
   phaseIsHold,
   STORAGE_BEST_STREAK,
 } from '@/lib/constants'
-import {
-  formatDuration,
-  formatExportFilename,
-  formatHoldLive,
-  formatSessionTime,
-  formatTimestamp,
-} from '@/lib/format'
+import { formatHoldLive, formatSessionTime } from '@/lib/format'
 import { readLocalStorageNumber, writeLocalStorage } from '@/lib/localStorage'
 
 function saveBestStreak(n: number) {
@@ -161,25 +155,6 @@ export default function BreathingTracker() {
     setHeldKeys(new Set())
   }
 
-  const exportLog = () => {
-    const lines = [...state.breaths]
-      .reverse()
-      .map(
-        (b, i) =>
-          `${i + 1}\t${formatTimestamp(b.completedAt)}\t${formatDuration(b.inhaleMs)}\t${formatDuration(b.exhaleMs)}`,
-      )
-      .join('\n')
-    const blob = new Blob([`breath\ttimestamp\tinhale\texhale\n${lines}\n`], {
-      type: 'text/tab-separated-values',
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = formatExportFilename()
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   if (needsAudioGate) {
     return (
       <div className="flex min-h-dvh items-center justify-center px-6">
@@ -272,23 +247,7 @@ export default function BreathingTracker() {
             >
               reset
             </button>
-            {state.breaths.length > 0 && (
-              <button type="button" onClick={exportLog} className="cursor-pointer hover:text-foreground">
-                export ({state.breaths.length})
-              </button>
-            )}
           </div>
-
-          {state.breaths.length > 0 && (
-            <ul className="max-h-32 space-y-1 overflow-y-auto tabular-nums text-dim">
-              {state.breaths.slice(0, 12).map((b, i) => (
-                <li key={b.id}>
-                  {state.breaths.length - i}. {formatDuration(b.inhaleMs)} /{' '}
-                  {formatDuration(b.exhaleMs)}
-                </li>
-              ))}
-            </ul>
-          )}
 
           {insecureContext && (
             <p className="text-dim/80">Audio needs HTTPS — use npm run dev:https on phone.</p>
