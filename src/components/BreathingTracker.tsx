@@ -49,7 +49,7 @@ const PhaseBeat = memo(function PhaseBeat({
   return (
     <span
       key={phase}
-      className={`breath-beat text-[clamp(4rem,20vw,10rem)] font-extralight uppercase tracking-[0.08em] transition-colors duration-500 ease-in-out ${
+      className={`breath-beat font-beat text-[clamp(4rem,20vw,10rem)] font-normal uppercase tracking-[0.02em] transition-colors duration-500 ease-in-out ${
         holding ? 'text-accent' : 'text-dim'
       }`}
     >

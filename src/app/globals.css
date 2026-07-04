@@ -16,6 +16,7 @@
   --color-dim: var(--dim);
   --color-accent: var(--accent);
   --font-mono: var(--font-geist-mono);
+  --font-beat: var(--font-nunito), ui-sans-serif, sans-serif;
 }
 
 body {
