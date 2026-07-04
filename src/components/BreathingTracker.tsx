@@ -13,9 +13,6 @@ import {
 import { useTouchAudioGate } from '@/hooks/useTouchAudioGate'
 import {
   playBreathCompleteBeep,
-  playExhaleStartBeep,
-  playHoldTickBeep,
-  playInhaleStartBeep,
   playMissBeep,
 } from '@/lib/beep'
 import {
@@ -101,11 +98,9 @@ export default function BreathingTracker() {
   }, [bumpIdle, bumpPause])
 
   const applyTransition = useCallback(
-    (next: BreathMachineState, breathKey: BreathKey, isDown: boolean) => {
+    (next: BreathMachineState) => {
       const prev = stateRef.current
 
-      if (isDown && next.phase === 'inhaling' && prev.phase !== 'inhaling') playInhaleStartBeep()
-      if (isDown && next.phase === 'exhaling' && prev.phase !== 'exhaling') playExhaleStartBeep()
       if (next.streak > prev.streak) playBreathCompleteBeep()
       if (next.lastMissAt !== null && next.lastMissAt !== prev.lastMissAt) playMissBeep()
 
@@ -122,7 +117,7 @@ export default function BreathingTracker() {
       enableAudio()
       pressRef.current[breathKey] = Date.now()
       setHeldKeys((prev) => new Set(prev).add(breathKey))
-      applyTransition(handleBreathKeyDown(stateRef.current, breathKey, Date.now()), breathKey, true)
+      applyTransition(handleBreathKeyDown(stateRef.current, breathKey, Date.now()))
     },
     [listening, enableAudio, applyTransition],
   )
@@ -136,7 +131,7 @@ export default function BreathingTracker() {
         next.delete(breathKey)
         return next
       })
-      applyTransition(handleBreathKeyUp(stateRef.current, breathKey, Date.now()), breathKey, false)
+      applyTransition(handleBreathKeyUp(stateRef.current, breathKey, Date.now()))
     },
     [listening, applyTransition],
   )
@@ -166,13 +161,6 @@ export default function BreathingTracker() {
       window.removeEventListener('keyup', onKeyUp)
     }
   }, [listening, handleKeyDown, handleKeyUp])
-
-  useEffect(() => {
-    if (!phaseActive(state.phase) || holdDuration < 1000) return
-    const secs = Math.floor(holdDuration / 1000)
-    const prevSecs = Math.floor((holdDuration - 100) / 1000)
-    if (secs > prevSecs) playHoldTickBeep()
-  }, [state.phase, holdDuration])
 
   const reset = () => {
     const next = resetSession(stateRef.current)
@@ -234,11 +222,14 @@ export default function BreathingTracker() {
           {state.streak}
         </span>
 
-        {phaseActive(state.phase) && (
-          <span className="mt-3 font-extralight tabular-nums text-dim">
-            {formatHoldLive(holdDuration)}
-          </span>
-        )}
+        <span
+          className={`mt-3 font-extralight tabular-nums text-dim transition-opacity ${
+            phaseActive(state.phase) ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-hidden={!phaseActive(state.phase)}
+        >
+          {formatHoldLive(holdDuration)}
+        </span>
       </div>
 
       {state.lastMissReason && (
