@@ -50,11 +50,14 @@ export function createInitialState(bestStreak = 0): BreathMachineState {
 }
 
 function miss(state: BreathMachineState, reason: string, at: number): BreathMachineState {
+  let sessionMs = state.sessionMs
+  if (state.sessionRunningSince !== null) sessionMs += at - state.sessionRunningSince
+
   return {
     ...state,
     phase: state.phase === 'idle' ? 'idle' : 'awaiting-inhale',
     streak: 0,
-    sessionMs: 0,
+    sessionMs,
     sessionRunningSince: null,
     gapStartedAt: null,
     holdStartedAt: null,
@@ -101,10 +104,12 @@ function completeBreath(state: BreathMachineState, exhaleMs: number, at: number)
 export function handleInhaleDown(state: BreathMachineState, at: number): BreathMachineState {
   if (state.phase === 'inhaling') return state
   if (state.phase === 'idle' || state.phase === 'awaiting-inhale') {
+    const afterMiss = state.lastMissReason !== null
     return {
       ...state,
       phase: 'inhaling',
-      sessionRunningSince: state.sessionRunningSince ?? at,
+      sessionMs: afterMiss ? 0 : state.sessionMs,
+      sessionRunningSince: afterMiss ? at : (state.sessionRunningSince ?? at),
       gapStartedAt: null,
       holdStartedAt: at,
       lastMissAt: null,
@@ -194,6 +199,10 @@ function selfCheck() {
 
   s = handleExhaleDown(s, t0 + 9100)
   console.assert(s.streak === 0 && s.lastMissReason !== null)
+  console.assert(s.sessionMs > 0 && s.sessionRunningSince === null)
+
+  s = handleInhaleDown(s, t0 + 10000)
+  console.assert(s.sessionMs === 0 && s.sessionRunningSince === t0 + 10000)
 
   s = handleInhaleDown(createInitialState(), t0)
   s = handleExhaleDown(s, t0 + 100)

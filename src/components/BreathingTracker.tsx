@@ -223,18 +223,20 @@ export default function BreathingTracker() {
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center select-none">
-      <div className="fixed inset-x-0 top-8 flex items-baseline justify-between px-8 text-xs tabular-nums tracking-wide">
-        {sessionClockActive && (
-          <span
-            className={`rounded px-2 py-0.5 text-muted transition-colors ${
-              sessionClockPaused ? 'border border-muted/60' : 'border border-transparent'
-            }`}
-          >
-            {formatSessionTime(sessionDuration)}
-          </span>
-        )}
+      <div className="fixed inset-x-0 top-8 grid grid-cols-2 items-baseline px-8 text-xs tabular-nums tracking-wide">
+        <span>
+          {sessionClockActive && (
+            <span
+              className={`rounded px-2 py-0.5 text-muted transition-colors ${
+                sessionClockPaused ? 'border border-muted/60' : 'border border-transparent'
+              }`}
+            >
+              {formatSessionTime(sessionDuration)}
+            </span>
+          )}
+        </span>
         {state.phase !== 'idle' && (
-          <span className="text-foreground/90">
+          <span className="text-right text-foreground/90">
             {state.streak}
             {state.bestStreak > 0 && <span className="text-muted"> · best {state.bestStreak}</span>}
           </span>
