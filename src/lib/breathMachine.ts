@@ -13,7 +13,8 @@ export type BreathMachineState = {
   phase: BreathPhase
   streak: number
   bestStreak: number
-  sessionStartedAt: number | null
+  sessionMs: number
+  sessionRunningSince: number | null
   holdStartedAt: number | null
   pendingInhaleMs: number | null
   breaths: BreathRecord[]
@@ -36,7 +37,8 @@ export function createInitialState(bestStreak = 0): BreathMachineState {
     phase: 'idle',
     streak: 0,
     bestStreak,
-    sessionStartedAt: null,
+    sessionMs: 0,
+    sessionRunningSince: null,
     holdStartedAt: null,
     pendingInhaleMs: null,
     breaths: [],
@@ -50,10 +52,21 @@ function miss(state: BreathMachineState, reason: string, at: number): BreathMach
     ...state,
     phase: state.phase === 'idle' ? 'idle' : 'awaiting-inhale',
     streak: 0,
+    sessionMs: 0,
+    sessionRunningSince: null,
     holdStartedAt: null,
     pendingInhaleMs: null,
     lastMissAt: at,
     lastMissReason: reason,
+  }
+}
+
+export function pauseSessionClock(state: BreathMachineState, at: number): BreathMachineState {
+  if (state.sessionRunningSince === null) return state
+  return {
+    ...state,
+    sessionMs: state.sessionMs + (at - state.sessionRunningSince),
+    sessionRunningSince: null,
   }
 }
 
@@ -86,7 +99,7 @@ export function handleInhaleDown(state: BreathMachineState, at: number): BreathM
     return {
       ...state,
       phase: 'inhaling',
-      sessionStartedAt: state.sessionStartedAt ?? at,
+      sessionRunningSince: state.sessionRunningSince ?? at,
       holdStartedAt: at,
       lastMissAt: null,
       lastMissReason: null,

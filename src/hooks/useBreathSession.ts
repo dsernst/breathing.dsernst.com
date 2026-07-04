@@ -50,10 +50,10 @@ export function useHoldDuration(holdStartedAt: number | null) {
   return Math.max(0, now - holdStartedAt)
 }
 
-export function useSessionDuration(sessionStartedAt: number | null) {
+export function useSessionDuration(sessionMs: number, sessionRunningSince: number | null) {
   const now = useNow()
-  if (sessionStartedAt === null) return 0
-  return Math.max(0, now - sessionStartedAt)
+  if (sessionRunningSince === null) return sessionMs
+  return sessionMs + Math.max(0, now - sessionRunningSince)
 }
 
 export function useBreathSessionWakeLock(active: boolean) {

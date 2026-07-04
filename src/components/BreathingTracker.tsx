@@ -20,6 +20,7 @@ import {
   createInitialState,
   handleBreathKeyDown,
   handleBreathKeyUp,
+  pauseSessionClock,
   resetSession,
   resolveBreathKey,
 } from '@/lib/breathMachine'
@@ -55,9 +56,11 @@ export default function BreathingTracker() {
   const { speechLabels, holdTone, toggleSpeechLabels, toggleHoldTone } = useBreathAudioPrefs()
 
   const holdDuration = useHoldDuration(state.holdStartedAt)
-  const sessionDuration = useSessionDuration(state.sessionStartedAt)
+  const sessionDuration = useSessionDuration(state.sessionMs, state.sessionRunningSince)
   const awaitingGap = state.phase === 'awaiting-inhale' || state.phase === 'awaiting-exhale'
   const { paused, bumpActivity: bumpPause } = usePauseHint(awaitingGap, PAUSE_HINT_MS)
+  const sessionClockActive = state.sessionRunningSince !== null || state.sessionMs > 0
+  const prevPausedRef = useRef(false)
 
   useBreathSessionWakeLock(state.phase !== 'idle')
 
@@ -74,6 +77,15 @@ export default function BreathingTracker() {
     else stopHoldTone()
     return () => stopHoldTone()
   }, [listening, holdTone, state.phase])
+
+  useEffect(() => {
+    if (paused && !prevPausedRef.current && state.phase !== 'idle') {
+      const next = pauseSessionClock(stateRef.current, Date.now())
+      stateRef.current = next
+      setState(next)
+    }
+    prevPausedRef.current = paused
+  }, [paused, state.phase])
 
   useEffect(() => {
     stateRef.current = state
@@ -196,9 +208,9 @@ export default function BreathingTracker() {
     <div className="relative flex min-h-dvh flex-col items-center justify-center select-none">
       <div className="fixed inset-x-0 top-8 flex items-baseline justify-between px-8 text-xs tabular-nums tracking-wide">
         <span className="text-muted">
-          {state.sessionStartedAt !== null ? formatSessionTime(sessionDuration) : ''}
-          {!listening && state.sessionStartedAt !== null && ' · paused'}
-          {listening && paused && ' · …'}
+          {sessionClockActive ? formatSessionTime(sessionDuration) : ''}
+          {!listening && sessionClockActive && ' · paused'}
+          {listening && paused && sessionClockActive && ' · …'}
         </span>
         {state.phase !== 'idle' && (
           <span className="text-foreground/90">

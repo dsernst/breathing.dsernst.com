@@ -14,7 +14,7 @@ export const CONTROLLER_IDLE_WARNINGS = [
 import { BreathPhase } from '@/lib/breathMachine'
 
 /** Show a gentle paused hint after this gap — does not break streak. */
-export const PAUSE_HINT_MS = 20_000
+export const PAUSE_HINT_MS = 3_000
 
 /** Main beat on screen — rhythm first, not controller directions. */
 export const PHASE_DISPLAY: Record<
