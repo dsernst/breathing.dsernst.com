@@ -32,7 +32,7 @@ On miss, the session clock **freezes** at the elapsed time so you can see how lo
 
 Toggle in the **···** drawer:
 
-- **Voice** — speaks "in" / "out" on press; fades out over breath pairs 1–8, then silent
+- **Voice** — speaks "in" / "out" on press; fades from pair 1, silent by pair 5
 - **Hold tone** — low drone while holding (higher pitch on inhale, lower on exhale)
 - **Idle warnings** — escalating beeps in the last 30s before an 8BitDo controller auto-sleeps (15 min idle)
 
