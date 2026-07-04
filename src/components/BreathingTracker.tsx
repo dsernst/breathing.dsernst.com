@@ -194,18 +194,16 @@ export default function BreathingTracker() {
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center select-none">
-      <div className="fixed inset-x-0 top-8 flex items-baseline justify-between px-8 text-xs tabular-nums tracking-wide text-dim">
-        <span>
+      <div className="fixed inset-x-0 top-8 flex items-baseline justify-between px-8 text-xs tabular-nums tracking-wide">
+        <span className="text-muted">
           {state.sessionStartedAt !== null ? formatSessionTime(sessionDuration) : ''}
           {!listening && state.sessionStartedAt !== null && ' · paused'}
           {listening && paused && ' · …'}
         </span>
         {state.phase !== 'idle' && (
-          <span>
+          <span className="text-foreground/90">
             {state.streak}
-            {state.bestStreak > 0 && (
-              <span className="text-dim/60"> · best {state.bestStreak}</span>
-            )}
+            {state.bestStreak > 0 && <span className="text-muted"> · best {state.bestStreak}</span>}
           </span>
         )}
       </div>

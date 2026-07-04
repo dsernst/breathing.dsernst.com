@@ -3,7 +3,8 @@
 :root {
   --background: #060910;
   --foreground: #c8d2de;
-  --dim: #2e3a4a;
+  --muted: #7d91a8;
+  --dim: #4a5f75;
   --accent: #6a94c8;
   color-scheme: dark;
 }
@@ -11,6 +12,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
   --color-dim: var(--dim);
   --color-accent: var(--accent);
   --font-mono: var(--font-geist-mono);
