@@ -24,12 +24,7 @@ import {
   resetSession,
   resolveBreathKey,
 } from '@/lib/breathMachine'
-import {
-  PAUSE_HINT_MS,
-  PHASE_DISPLAY,
-  phaseIsHold,
-  STORAGE_BEST_STREAK,
-} from '@/lib/constants'
+import { PAUSE_HINT_MS, PHASE_DISPLAY, phaseIsHold, STORAGE_BEST_STREAK } from '@/lib/constants'
 import { formatHoldLive, formatSessionTime } from '@/lib/format'
 import { readLocalStorageNumber, writeLocalStorage } from '@/lib/localStorage'
 import { cancelSpeech, speakBreathPhase } from '@/lib/speech'
@@ -61,6 +56,8 @@ export default function BreathingTracker() {
   const { paused, bumpActivity: bumpPause } = usePauseHint(awaitingGap, PAUSE_HINT_MS)
   const sessionClockActive = state.sessionRunningSince !== null || state.sessionMs > 0
   const prevPausedRef = useRef(false)
+
+  const sessionClockPaused = sessionClockActive && state.sessionRunningSince === null
 
   useBreathSessionWakeLock(state.phase !== 'idle')
 
@@ -130,8 +127,10 @@ export default function BreathingTracker() {
       const next = handleBreathKeyDown(prev, breathKey, Date.now())
       if (speechLabels) {
         const breathPair = prev.streak + 1
-        if (next.phase === 'inhaling' && prev.phase !== 'inhaling') speakBreathPhase('in', breathPair)
-        if (next.phase === 'exhaling' && prev.phase !== 'exhaling') speakBreathPhase('out', breathPair)
+        if (next.phase === 'inhaling' && prev.phase !== 'inhaling')
+          speakBreathPhase('in', breathPair)
+        if (next.phase === 'exhaling' && prev.phase !== 'exhaling')
+          speakBreathPhase('out', breathPair)
       }
       pressRef.current[breathKey] = Date.now()
       setHeldKeys((held) => new Set(held).add(breathKey))
@@ -207,11 +206,15 @@ export default function BreathingTracker() {
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center select-none">
       <div className="fixed inset-x-0 top-8 flex items-baseline justify-between px-8 text-xs tabular-nums tracking-wide">
-        <span className="text-muted">
-          {sessionClockActive ? formatSessionTime(sessionDuration) : ''}
-          {!listening && sessionClockActive && ' · paused'}
-          {listening && paused && sessionClockActive && ' · …'}
-        </span>
+        {sessionClockActive && (
+          <span
+            className={`rounded px-2 py-0.5 text-muted transition-colors ${
+              sessionClockPaused ? 'border border-muted/60' : 'border border-transparent'
+            }`}
+          >
+            {formatSessionTime(sessionDuration)}
+          </span>
+        )}
         {state.phase !== 'idle' && (
           <span className="text-foreground/90">
             {state.streak}
