@@ -20,9 +20,9 @@ import {
   createInitialState,
   handleBreathKeyDown,
   handleBreathKeyUp,
-  pauseSessionClock,
   resetSession,
   resolveBreathKey,
+  pauseSessionClock,
 } from '@/lib/breathMachine'
 import { PAUSE_HINT_MS, PHASE_DISPLAY, phaseIsHold, STORAGE_BEST_STREAK } from '@/lib/constants'
 import { formatHoldLive, formatSessionTime } from '@/lib/format'
@@ -55,9 +55,8 @@ export default function BreathingTracker() {
   const awaitingGap = state.phase === 'awaiting-inhale' || state.phase === 'awaiting-exhale'
   const { paused, bumpActivity: bumpPause } = usePauseHint(awaitingGap, PAUSE_HINT_MS)
   const sessionClockActive = state.sessionRunningSince !== null || state.sessionMs > 0
+  const sessionClockPaused = sessionClockActive && paused && awaitingGap
   const prevPausedRef = useRef(false)
-
-  const sessionClockPaused = sessionClockActive && state.sessionRunningSince === null
 
   useBreathSessionWakeLock(state.phase !== 'idle')
 

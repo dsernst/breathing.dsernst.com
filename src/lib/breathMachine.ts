@@ -15,6 +15,7 @@ export type BreathMachineState = {
   bestStreak: number
   sessionMs: number
   sessionRunningSince: number | null
+  gapStartedAt: number | null
   holdStartedAt: number | null
   pendingInhaleMs: number | null
   breaths: BreathRecord[]
@@ -39,6 +40,7 @@ export function createInitialState(bestStreak = 0): BreathMachineState {
     bestStreak,
     sessionMs: 0,
     sessionRunningSince: null,
+    gapStartedAt: null,
     holdStartedAt: null,
     pendingInhaleMs: null,
     breaths: [],
@@ -54,6 +56,7 @@ function miss(state: BreathMachineState, reason: string, at: number): BreathMach
     streak: 0,
     sessionMs: 0,
     sessionRunningSince: null,
+    gapStartedAt: null,
     holdStartedAt: null,
     pendingInhaleMs: null,
     lastMissAt: at,
@@ -63,9 +66,10 @@ function miss(state: BreathMachineState, reason: string, at: number): BreathMach
 
 export function pauseSessionClock(state: BreathMachineState, at: number): BreathMachineState {
   if (state.sessionRunningSince === null) return state
+  const freezeAt = state.gapStartedAt ?? at
   return {
     ...state,
-    sessionMs: state.sessionMs + (at - state.sessionRunningSince),
+    sessionMs: state.sessionMs + (freezeAt - state.sessionRunningSince),
     sessionRunningSince: null,
   }
 }
@@ -85,6 +89,7 @@ function completeBreath(state: BreathMachineState, exhaleMs: number, at: number)
     phase: 'awaiting-inhale',
     streak,
     bestStreak: Math.max(state.bestStreak, streak),
+    gapStartedAt: at,
     holdStartedAt: null,
     pendingInhaleMs: null,
     breaths: [record, ...state.breaths],
@@ -100,6 +105,7 @@ export function handleInhaleDown(state: BreathMachineState, at: number): BreathM
       ...state,
       phase: 'inhaling',
       sessionRunningSince: state.sessionRunningSince ?? at,
+      gapStartedAt: null,
       holdStartedAt: at,
       lastMissAt: null,
       lastMissReason: null,
@@ -116,6 +122,7 @@ export function handleInhaleUp(state: BreathMachineState, at: number): BreathMac
   return {
     ...state,
     phase: 'awaiting-exhale',
+    gapStartedAt: at,
     holdStartedAt: null,
     pendingInhaleMs: at - state.holdStartedAt,
     lastMissAt: null,
@@ -129,6 +136,8 @@ export function handleExhaleDown(state: BreathMachineState, at: number): BreathM
     return {
       ...state,
       phase: 'exhaling',
+      sessionRunningSince: state.sessionRunningSince ?? at,
+      gapStartedAt: null,
       holdStartedAt: at,
       lastMissAt: null,
       lastMissReason: null,
