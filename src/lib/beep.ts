@@ -9,6 +9,8 @@ function getAudioContext() {
   return audioCtx
 }
 
+export { getAudioContext }
+
 function tone(freq: number, gain: number, durationMs: number, startOffset = 0) {
   const ctx = getAudioContext()
   const now = ctx.currentTime + startOffset
@@ -24,24 +26,8 @@ function tone(freq: number, gain: number, durationMs: number, startOffset = 0) {
   osc.stop(now + durationMs / 1000)
 }
 
-export function playInhaleStartBeep() {
-  tone(320, 0.12, 80)
-}
-
-export function playExhaleStartBeep() {
-  tone(240, 0.12, 80)
-}
-
-export function playBreathCompleteBeep() {
-  tone(440, 0.1, 60)
-}
-
 export function playMissBeep() {
   tone(120, 0.18, 200)
-}
-
-export function playHoldTickBeep() {
-  tone(200, 0.12, 80)
 }
 
 export function playIdleWarningBeep(gain = 0.12) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
+import { BreathAudioSettings, useBreathAudioPrefs } from '@/components/BreathAudioSettings'
 import BreathController from '@/components/BreathController'
 import { IdleWarningBeeps, useIdleWarningBeeps } from '@/components/IdleWarningBeeps'
 import { useClientSnapshot } from '@/hooks/useClientSnapshot'
@@ -11,7 +12,8 @@ import {
   useSessionDuration,
 } from '@/hooks/useBreathSession'
 import { useTouchAudioGate } from '@/hooks/useTouchAudioGate'
-import { playBreathCompleteBeep, playMissBeep } from '@/lib/beep'
+import { playMissBeep } from '@/lib/beep'
+import { startHoldTone, stopHoldTone } from '@/lib/holdTone'
 import {
   BreathKey,
   BreathMachineState,
@@ -29,6 +31,7 @@ import {
 } from '@/lib/constants'
 import { formatHoldLive, formatSessionTime } from '@/lib/format'
 import { readLocalStorageNumber, writeLocalStorage } from '@/lib/localStorage'
+import { cancelSpeech, speakBreathPhase } from '@/lib/speech'
 
 function saveBestStreak(n: number) {
   writeLocalStorage(STORAGE_BEST_STREAK, String(n))
@@ -49,6 +52,7 @@ export default function BreathingTracker() {
   const insecureContext = useClientSnapshot(() => !window.isSecureContext, false)
   const { needsAudioGate, enableAudio } = useTouchAudioGate()
   const { bumpActivity: bumpIdle, ...idleBeepsProps } = useIdleWarningBeeps(listening, enableAudio)
+  const { speechLabels, holdTone, toggleSpeechLabels, toggleHoldTone } = useBreathAudioPrefs()
 
   const holdDuration = useHoldDuration(state.holdStartedAt)
   const sessionDuration = useSessionDuration(state.sessionStartedAt)
@@ -59,6 +63,17 @@ export default function BreathingTracker() {
 
   const holding = phaseIsHold(state.phase)
   const { beat, hint } = PHASE_DISPLAY[state.phase]
+
+  useEffect(() => {
+    if (!listening || !holdTone) {
+      stopHoldTone()
+      return
+    }
+    if (state.phase === 'inhaling') startHoldTone('inhale')
+    else if (state.phase === 'exhaling') startHoldTone('exhale')
+    else stopHoldTone()
+    return () => stopHoldTone()
+  }, [listening, holdTone, state.phase])
 
   useEffect(() => {
     stateRef.current = state
@@ -86,7 +101,6 @@ export default function BreathingTracker() {
     (next: BreathMachineState) => {
       const prev = stateRef.current
 
-      if (next.streak > prev.streak) playBreathCompleteBeep()
       if (next.lastMissAt !== null && next.lastMissAt !== prev.lastMissAt) playMissBeep()
 
       stateRef.current = next
@@ -100,11 +114,17 @@ export default function BreathingTracker() {
     (breathKey: BreathKey) => {
       if (!listening || pressRef.current[breathKey]) return
       enableAudio()
+      const prev = stateRef.current
+      const next = handleBreathKeyDown(prev, breathKey, Date.now())
+      if (speechLabels) {
+        if (next.phase === 'inhaling' && prev.phase !== 'inhaling') speakBreathPhase('in')
+        if (next.phase === 'exhaling' && prev.phase !== 'exhaling') speakBreathPhase('out')
+      }
       pressRef.current[breathKey] = Date.now()
-      setHeldKeys((prev) => new Set(prev).add(breathKey))
-      applyTransition(handleBreathKeyDown(stateRef.current, breathKey, Date.now()))
+      setHeldKeys((held) => new Set(held).add(breathKey))
+      applyTransition(next)
     },
-    [listening, enableAudio, applyTransition],
+    [listening, enableAudio, applyTransition, speechLabels],
   )
 
   const handleKeyUp = useCallback(
@@ -148,6 +168,8 @@ export default function BreathingTracker() {
   }, [listening, handleKeyDown, handleKeyUp])
 
   const reset = () => {
+    stopHoldTone()
+    cancelSpeech()
     const next = resetSession(stateRef.current)
     stateRef.current = next
     setState(next)
@@ -229,6 +251,13 @@ export default function BreathingTracker() {
             interactive={listening}
             onKeyDown={handleKeyDown}
             onKeyUp={handleKeyUp}
+          />
+
+          <BreathAudioSettings
+            speechLabels={speechLabels}
+            holdTone={holdTone}
+            toggleSpeechLabels={toggleSpeechLabels}
+            toggleHoldTone={toggleHoldTone}
           />
 
           <div className="flex flex-wrap gap-x-4 gap-y-1">

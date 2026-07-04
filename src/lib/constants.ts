@@ -38,3 +38,5 @@ export const KEY_COLORS = {
 } as const
 
 export const STORAGE_BEST_STREAK = 'breathing-best-streak'
+export const STORAGE_SPEECH_LABELS = 'breathing-speech-labels'
+export const STORAGE_HOLD_TONE = 'breathing-hold-tone'
