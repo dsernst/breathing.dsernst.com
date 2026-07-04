@@ -232,7 +232,7 @@ export default function BreathingTracker() {
         </span>
 
         <span
-          className={`mt-4 min-h-[2rem] text-[clamp(1.5rem,6vw,3rem)] font-extralight tabular-nums transition-opacity duration-150 ${
+          className={`mt-4 min-h-8 text-[clamp(1.5rem,6vw,3rem)] font-extralight tabular-nums transition-opacity duration-150 ${
             holding ? 'text-foreground opacity-100' : 'opacity-0'
           }`}
           aria-hidden={!holding}
@@ -241,7 +241,7 @@ export default function BreathingTracker() {
         </span>
 
         <span
-          className={`mt-3 min-h-[1rem] text-[0.65rem] uppercase tracking-[0.2em] text-dim/70 transition-opacity duration-150 ${
+          className={`mt-3 min-h-4 text-[0.65rem] uppercase tracking-[0.2em] text-dim/70 transition-opacity duration-150 ${
             hint ? 'opacity-100' : 'opacity-0'
           }`}
           aria-hidden={!hint}
