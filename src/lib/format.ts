@@ -2,10 +2,6 @@ export function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`
 }
 
-export function formatHoldLive(ms: number): string {
-  return `${Math.floor(ms / 1000)}s`
-}
-
 export function formatSessionTime(ms: number): string {
   const total = Math.floor(ms / 1000)
   const m = Math.floor(total / 60)

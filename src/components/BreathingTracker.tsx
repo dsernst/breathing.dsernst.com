@@ -7,7 +7,6 @@ import { IdleWarningBeeps, useIdleWarningBeeps } from '@/components/IdleWarningB
 import { useClientSnapshot } from '@/hooks/useClientSnapshot'
 import {
   useBreathSessionWakeLock,
-  useHoldDuration,
   usePauseHint,
   useSessionDuration,
 } from '@/hooks/useBreathSession'
@@ -25,7 +24,7 @@ import {
   pauseSessionClock,
 } from '@/lib/breathMachine'
 import { PAUSE_HINT_MS, PHASE_DISPLAY, phaseIsHold, STORAGE_BEST_STREAK } from '@/lib/constants'
-import { formatHoldLive, formatSessionTime } from '@/lib/format'
+import { formatSessionTime } from '@/lib/format'
 import { readLocalStorageNumber, writeLocalStorage } from '@/lib/localStorage'
 import { cancelSpeech, speakBreathPhase } from '@/lib/speech'
 
@@ -50,7 +49,6 @@ export default function BreathingTracker() {
   const { bumpActivity: bumpIdle, ...idleBeepsProps } = useIdleWarningBeeps(listening, enableAudio)
   const { speechLabels, holdTone, toggleSpeechLabels, toggleHoldTone } = useBreathAudioPrefs()
 
-  const holdDuration = useHoldDuration(state.holdStartedAt)
   const sessionDuration = useSessionDuration(state.sessionMs, state.sessionRunningSince)
   const awaitingGap = state.phase === 'awaiting-inhale' || state.phase === 'awaiting-exhale'
   const { paused, bumpActivity: bumpPause } = usePauseHint(awaitingGap, PAUSE_HINT_MS)
@@ -229,15 +227,6 @@ export default function BreathingTracker() {
           }`}
         >
           {formatBeat(beat)}
-        </span>
-
-        <span
-          className={`mt-4 min-h-8 text-[clamp(1.5rem,6vw,3rem)] font-extralight tabular-nums transition-opacity duration-150 ${
-            holding ? 'text-foreground opacity-100' : 'opacity-0'
-          }`}
-          aria-hidden={!holding}
-        >
-          {formatHoldLive(holdDuration)}
         </span>
 
         <span

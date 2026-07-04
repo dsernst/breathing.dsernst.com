@@ -44,12 +44,6 @@ export function usePauseHint(active: boolean, pauseHintMs: number) {
   return { paused, bumpActivity }
 }
 
-export function useHoldDuration(holdStartedAt: number | null) {
-  const now = useNow()
-  if (holdStartedAt === null) return 0
-  return Math.max(0, now - holdStartedAt)
-}
-
 export function useSessionDuration(sessionMs: number, sessionRunningSince: number | null) {
   const now = useNow()
   if (sessionRunningSince === null) return sessionMs
